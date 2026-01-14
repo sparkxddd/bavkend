@@ -6,33 +6,30 @@ const env = require('./config/env');
 const redisClient = require('./config/redis');
 const app = express();
 
-// Security Middleware
-app.use(helmet()); // Set secure HTTP headers
-
-// Relaxed CORS for mobile/dev
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    'https://quick-bh1a.onrender.com',
-    'http://localhost:3000',
-    'http://localhost',
-    'capacitor://localhost',
-    'http://10.0.2.2:3001',
-    'http://10.0.2.2'
-].filter(Boolean);
-
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost') || origin.startsWith('capacitor://localhost') || origin.startsWith('https://quick-bh1a.onrender.com')) {
-            callback(null, true);
-        } else {
-            console.warn(`[CORS] Rejected origin: ${origin}`);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
+  origin: (origin, callback) => {
+    // Allow mobile apps, Postman, curl, server-to-server
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      'https://quick-bh1a.onrender.com',
+      'http://localhost:3000',
+      'capacitor://localhost',
+    ].filter(Boolean);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn('[CORS] Blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
 }));
+
 
 // Request Logging Middleware for debugging connectivity
 app.use((req, res, next) => {
